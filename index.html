@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>もいもん 公式サイト</title>
+    <style>
+        /* 全体のスタイル */
+        body {
+            background-color: #FFFF00; /* 鮮やかなイエロー */
+            color: #000000;
+            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+            margin: 0;
+            padding: 20px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        /* コンテナの幅を制限して中央寄せ */
+        .container {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-sizing: border-box;
+        }
+        /* タイトル */
+        h1 {
+            font-size: 2.2rem;
+            margin: 10px 0 20px 0;
+            font-weight: bold;
+            letter-spacing: 0.1em;
+            text-align: center;
+        }
+        /* メイン画像コンテナ */
+        .main-image-box {
+            width: 100%;
+            margin-bottom: 25px;
+            position: relative;
+            overflow: hidden;
+            border-radius: 4px;
+        }
+        /* 画像未読み込み（プレースホルダー）時のスタイル */
+        .main-image-box.placeholder {
+            aspect-ratio: 1 / 1;
+            background-color: #000000;
+            color: #FFFFFF;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            letter-spacing: 0.05em;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+        .main-image-box img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        /* 画像が表示されたらテキスト（スパン）を非表示にする */
+        .main-image-box:not(.placeholder) span {
+            display: none;
+        }
+        /* 話数リスト */
+        .story-list {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 50px;
+            line-height: 2.2rem;
+        }
+        .story-list a, .story-list span {
+            font-size: 1.2rem;
+            margin: 0 8px;
+            display: inline-block;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        /* リンクあり（第1話、第2話など） */
+        .story-list a {
+            color: #0000EE; /* レトロなクラシックリンクブルー */
+            transition: color 0.2s ease, transform 0.1s ease;
+        }
+        .story-list a:hover {
+            color: #FF0000; /* ホバーで赤に（原作サイト風） */
+            text-decoration: underline;
+            transform: scale(1.05);
+        }
+        /* リンクなし（開発中などのグレーアウト） */
+        .story-list span.disabled {
+            color: #555555;
+            cursor: default;
+        }
+        /* 説明文 */
+        .info-text {
+            font-size: 0.85rem;
+            text-align: center;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            width: 90%;
+            max-width: 400px;
+            font-weight: 500;
+        }
+        /* 単行本セクション */
+        .books-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        /* 4巻は2行目に配置されるが、グリッド内で適切に配置 */
+        .book-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: #000000;
+            transition: transform 0.2s ease;
+        }
+        .book-item:hover {
+            transform: translateY(-5px);
+        }
+        /* 単行本画像ボックス */
+        .book-image-box {
+            width: 100%;
+            margin-bottom: 8px;
+            position: relative;
+            overflow: hidden;
+            border-radius: 3px;
+        }
+        /* 画像未読み込み（プレースホルダー）時のスタイル */
+        .book-image-box.placeholder {
+            aspect-ratio: 1 / 1.45; /* 一般的な単行本の比率 */
+            background-color: #000000;
+            color: #FFFFFF;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.85rem;
+            text-align: center;
+            line-height: 1.4;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .book-image-box img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .book-image-box span {
+            padding: 5px;
+            font-weight: bold;
+        }
+        /* 画像が表示されたらテキスト（スパン）を非表示にする */
+        .book-image-box:not(.placeholder) span {
+            display: none;
+        }
+        /* 単行本テキストリンク */
+        .book-title {
+            font-size: 0.9rem;
+            text-decoration: underline;
+            font-weight: bold;
+        }
+        .book-item:hover .book-title {
+            color: #FF0000;
+        }
+        /* 4巻の配置調整（グリッドの2行目中央付近に置くためのコンテナ） */
+        .books-container-lower {
+            display: flex;
+            justify-content: flex-start;
+            width: 100%;
+            margin-bottom: 50px;
+        }
+        .books-container-lower .book-item {
+            width: calc(33.333% - 10px); /* 上のグリッドと幅を合わせる */
+        }
+        /* X (Twitter) リンク */
+        .x-link {
+            margin-top: 20px;
+            margin-bottom: 30px;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 40px;
+            height: 40px;
+            background-color: #000000;
+            border-radius: 4px;
+            transition: transform 0.2s ease, background-color 0.2s ease;
+        }
+        .x-link:hover {
+            transform: scale(1.1);
+            background-color: #333333;
+        }
+        .x-link svg {
+            width: 20px;
+            height: 20px;
+            fill: #FFFFFF;
+        }
+        /* レスポンシブ対応 */
+        @media (max-width: 400px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+            .story-list a, .story-list span {
+                font-size: 1.1rem;
+                margin: 0 6px;
+            }
+            .book-image-box {
+                font-size: 0.75rem;
+            }
+            .book-title {
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- タイトル -->
+        <h1>もいもん</h1>
+        <!-- メイン画像 (画像がない場合は黒背景のプレースホルダーが表示されます) -->
+        <div class="main-image-box placeholder">
+            <img src="main2.png" alt="メイン画像" onload="this.parentElement.classList.remove('placeholder');" onerror="this.style.display='none';">
+            <span>メイン画像</span>
+        </div>
+        <!-- 話数リスト -->
+        <div class="story-list">
+            <!-- 各フォルダのindex.htmlへ直接リンクさせます -->
+            <a href="story1/index.html">第１話</a>
+            <a href="story2/index.html">第２話</a>
+            <a href="story3/index.html">第３話</a>
+            <a href="story4/index.html">第４話</a>
+            <a href="story5/index.html">第５話</a>
+            <br>
+            <a href="story6/index.html">第６話</a>
+            <a href="story7/index.html">第７話</a>
+            <a href="story8/index.html">第８話</a>
+            <br>
+            <span style="color: #000000; font-size: 1.2rem; font-weight: 500;">2026年7月10日 第８話更新</span>
+        </div>
+<!-- 単行本紹介テキスト -->
+        <div class="info-text">
+            ↓単行本にしか収録されていない番外編や<br>
+            モイモン図鑑もあるのでよければ手に取ってみてください。
+        </div>
+        <!-- 単行本リスト（1〜3巻） -->
+        <div class="books-grid">
+            <!-- 1巻 -->
+            <a href="https://amzn.asia/d/07fAnDtq" class="book-item" target="_blank" rel="noopener noreferrer">
+                <div class="book-image-box placeholder">
+                    <img src="cover1.jpg" alt="単行本 第1巻 表紙画像" onload="this.parentElement.classList.remove('placeholder');" onerror="this.style.display='none';">
+                    <span>単行本<br>第１巻<br>表紙画像</span>
+                </div>
+                <div class="book-title">第１巻</div>
+            </a>
+            <!-- 2巻 -->
+            <a href="https://amzn.asia/d/089Nwt0u" class="book-item" target="_blank" rel="noopener noreferrer">
+                <div class="book-image-box placeholder">
+                    <img src="cover2.jpg" alt="単行本 第2巻 表紙画像" onload="this.parentElement.classList.remove('placeholder');" onerror="this.style.display='none';">
+                    <span>単行本<br>第２巻<br>表紙画像</span>
+                </div>
+                <div class="book-title">第２巻</div>
+            </a>
+            <!-- 3巻 -->
+            <a href="https://amzn.asia/d/09XwIM8v" class="book-item" target="_blank" rel="noopener noreferrer">
+                <div class="book-image-box placeholder">
+                    <img src="cover3.jpg" alt="単行本 第3巻 表紙画像" onload="this.parentElement.classList.remove('placeholder');" onerror="this.style.display='none';">
+                    <span>単行本<br>第３巻<br>表紙画像</span>
+                </div>
+                <div class="book-title">第３巻</div>
+            </a>
+        </div>
+        <!-- 単行本リスト（4巻：下の行） -->
+        <div class="books-container-lower">
+            <!-- 4巻 -->
+            <a href="https://amzn.asia/d/0gCEH4oe" class="book-item" target="_blank" rel="noopener noreferrer">
+                <div class="book-image-box placeholder">
+                    <img src="cover4.jpg" alt="単行本 第4巻 表紙画像" onload="this.parentElement.classList.remove('placeholder');" onerror="this.style.display='none';">
+                    <span>単行本<br>第４巻<br>表紙画像</span>
+                </div>
+                <div class="book-title">第４巻</div>
+            </a>
+        </div>
+        <!-- X (旧Twitter) アイコンリンク -->
+        <a href="https://x.com/keeeezk" class="x-link" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path>
+            </svg>
+        </a>
+    </div>
+</body>
+</html>
