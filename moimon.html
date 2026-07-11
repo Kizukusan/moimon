@@ -2,295 +2,308 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>もいもん 公式サイト</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>漫画ビューワー</title>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+
     <style>
-        /* 全体のスタイル */
-        body {
-            background-color: #FFFF00; /* 鮮やかなイエロー */
-            color: #000000;
-            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
-            margin: 0;
-            padding: 20px 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
+        :root {
+            /* 広告を避けるための下部余白（広告の高さに合わせて調整してください） */
+            --ad-safe-bottom: 0px; 
         }
-        /* コンテナの幅を制限して中央寄せ */
-        .container {
+
+        body { 
+            background-color: #111; 
+            color: #fff; 
+            margin: 0; 
+            padding: 0; 
+            overflow: hidden;
+            font-family: sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        
+        /* ビューワー全体のサイズ設定 */
+        .comic-viewer-wrapper {
             width: 100%;
-            max-width: 500px;
+            height: calc(100vh - var(--ad-safe-bottom));
             display: flex;
-            flex-direction: column;
             align-items: center;
+            justify-content: center;
             box-sizing: border-box;
         }
-        /* タイトル */
-        h1 {
-            font-size: 2.2rem;
-            margin: 10px 0 20px 0;
-            font-weight: bold;
-            letter-spacing: 0.1em;
-            text-align: center;
+        .comic-viewer { 
+            width: 100%; 
+            max-width: 800px; 
+            margin: 0 auto; 
         }
-        /* メイン画像コンテナ */
-        .main-image-box {
+        .comic-viewer img { 
+            width: 100%; 
+            height: auto; 
+            max-height: calc(100vh - var(--ad-safe-bottom));
+            object-fit: contain;
+            display: block; 
+        }
+
+        /* 左右・中央のタップ判定エリア */
+        .tap-zone {
+            position: fixed;
+            top: 60px;
+            bottom: calc(0px + var(--ad-safe-bottom));
+            z-index: 10;
+        }
+        .tap-left { left: 0; width: 25%; }
+        .tap-right { right: 0; width: 25%; }
+        .tap-center { left: 25%; width: 50%; }
+
+        /* ジャンププラス風メニュー（上下のバー）共通設定 */
+        .menu-bar {
+            position: fixed;
+            left: 0;
             width: 100%;
-            margin-bottom: 25px;
-            position: relative;
-            overflow: hidden;
-            border-radius: 4px;
+            background: rgba(20, 20, 20, 0.95);
+            transition: transform 0.2s ease;
+            z-index: 100;
+            box-sizing: border-box;
         }
-        /* 画像未読み込み（プレースホルダー）時のスタイル */
-        .main-image-box.placeholder {
-            aspect-ratio: 1 / 1;
-            background-color: #000000;
-            color: #FFFFFF;
+        /* 初期状態は画面の外に隠しておく */
+        .top-bar {
+            top: 0;
+            height: 60px;
+            transform: translateY(-100%);
             display: flex;
-            justify-content: center;
             align-items: center;
-            font-size: 2.5rem;
-            font-weight: bold;
-            letter-spacing: 0.05em;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            justify-content: center;
+            border-bottom: 1px solid #333;
         }
-        .main-image-box img {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
-        /* 画像が表示されたらテキスト（スパン）を非表示にする */
-        .main-image-box:not(.placeholder) span {
-            display: none;
-        }
-        /* 話数リスト */
-        .story-list {
-            width: 100%;
-            text-align: center;
-            margin-bottom: 50px;
-            line-height: 2.2rem;
-        }
-        .story-list a, .story-list span {
-            font-size: 1.2rem;
-            margin: 0 8px;
-            display: inline-block;
-            text-decoration: none;
-            font-weight: 500;
-        }
-        /* リンクあり（第1話、第2話など） */
-        .story-list a {
-            color: #0000EE; /* レトロなクラシックリンクブルー */
-            transition: color 0.2s ease, transform 0.1s ease;
-        }
-        .story-list a:hover {
-            color: #FF0000; /* ホバーで赤に（原作サイト風） */
-            text-decoration: underline;
-            transform: scale(1.05);
-        }
-        /* リンクなし（開発中などのグレーアウト） */
-        .story-list span.disabled {
-            color: #555555;
-            cursor: default;
-        }
-        /* 説明文 */
-        .info-text {
-            font-size: 0.85rem;
-            text-align: center;
-            line-height: 1.6;
-            margin-bottom: 20px;
-            width: 90%;
-            max-width: 400px;
-            font-weight: 500;
-        }
-        /* 単行本セクション */
-        .books-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            width: 100%;
-            margin-bottom: 20px;
-        }
-        /* 4巻は2行目に配置されるが、グリッド内で適切に配置 */
-        .book-item {
+        .bottom-bar {
+            bottom: var(--ad-safe-bottom);
+            height: 100px;
+            transform: translateY(calc(100% + var(--ad-safe-bottom)));
             display: flex;
             flex-direction: column;
-            align-items: center;
+            justify-content: space-around;
+            padding: 10px 20px;
+            border-top: 1px solid #333;
+        }
+        /* メニュー表示用のクラス */
+        .menu-active {
+            transform: translateY(0) !important;
+        }
+
+        /* ボタン・テキストのデザイン */
+        .top-title {
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .back-to-top {
+            position: absolute;
+            left: 15px;
+            color: #fff;
             text-decoration: none;
-            color: #000000;
-            transition: transform 0.2s ease;
-        }
-        .book-item:hover {
-            transform: translateY(-5px);
-        }
-        /* 単行本画像ボックス */
-        .book-image-box {
-            width: 100%;
-            margin-bottom: 8px;
-            position: relative;
-            overflow: hidden;
-            border-radius: 3px;
-        }
-        /* 画像未読み込み（プレースホルダー）時のスタイル */
-        .book-image-box.placeholder {
-            aspect-ratio: 1 / 1.45; /* 一般的な単行本の比率 */
-            background-color: #000000;
-            color: #FFFFFF;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 0.85rem;
-            text-align: center;
-            line-height: 1.4;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-        .book-image-box img {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
-        .book-image-box span {
-            padding: 5px;
-            font-weight: bold;
-        }
-        /* 画像が表示されたらテキスト（スパン）を非表示にする */
-        .book-image-box:not(.placeholder) span {
-            display: none;
-        }
-        /* 単行本テキストリンク */
-        .book-title {
-            font-size: 0.9rem;
-            text-decoration: underline;
-            font-weight: bold;
-        }
-        .book-item:hover .book-title {
-            color: #FF0000;
-        }
-        /* 4巻の配置調整（グリッドの2行目中央付近に置くためのコンテナ） */
-        .books-container-lower {
-            display: flex;
-            justify-content: flex-start;
-            width: 100%;
-            margin-bottom: 50px;
-        }
-        .books-container-lower .book-item {
-            width: calc(33.333% - 10px); /* 上のグリッドと幅を合わせる */
-        }
-        /* X (Twitter) リンク */
-        .x-link {
-            margin-top: 20px;
-            margin-bottom: 30px;
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            width: 40px;
-            height: 40px;
-            background-color: #000000;
+            font-size: 14px;
+            background: #333;
+            padding: 6px 12px;
             border-radius: 4px;
-            transition: transform 0.2s ease, background-color 0.2s ease;
         }
-        .x-link:hover {
-            transform: scale(1.1);
-            background-color: #333333;
+
+        /* ページ数表示（〇/〇） */
+        .page-counter {
+            text-align: center;
+            font-size: 14px;
+            color: #ccc;
         }
-        .x-link svg {
-            width: 20px;
-            height: 20px;
-            fill: #FFFFFF;
+
+        /* ゲージ（スライダーバー） */
+        .gauge-container {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 5px 0;
         }
-        /* レスポンシブ対応 */
-        @media (max-width: 400px) {
-            h1 {
-                font-size: 1.8rem;
-            }
-            .story-list a, .story-list span {
-                font-size: 1.1rem;
-                margin: 0 6px;
-            }
-            .book-image-box {
-                font-size: 0.75rem;
-            }
-            .book-title {
-                font-size: 0.8rem;
-            }
+        .page-gauge {
+            width: 85%;
+            margin: 0;
+            cursor: pointer;
+            accent-color: #e50914; /* ジャンプ風の赤色ゲージ */
+        }
+
+        /* 下部ナビゲーション（【修正】次の話を左、前の話を右に強制配置） */
+        .story-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+        }
+        .story-nav a {
+            color: #fff;
+            text-decoration: none;
+            background: #222;
+            padding: 5px 15px;
+            border-radius: 4px;
+            border: 1px solid #444;
+        }
+        .story-nav a.disabled {
+            color: #555;
+            border-color: #222;
+            pointer-events: none;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- タイトル -->
-        <h1>もいもん</h1>
-        <!-- メイン画像 (画像がない場合は黒背景のプレースホルダーが表示されます) -->
-        <div class="main-image-box placeholder">
-            <img src="main2.png" alt="メイン画像" onload="this.parentElement.classList.remove('placeholder');" onerror="this.style.display='none';">
-            <span>メイン画像</span>
-        </div>
-        <!-- 話数リスト -->
-        <div class="story-list">
-            <!-- 指定リンクあり -->
-            <a href="https://moimon.web.fc2.com/moimon.html?p=story1">第１話</a>
-            <a href="https://moimon.web.fc2.com/moimon.html?p=story2">第２話</a>
-            
-            <!-- 他の話数はリンク先が決まり次第aタグに書き換え可能 -->
-            <a href="https://moimon.web.fc2.com/moimon.html?p=story3">第３話</a>
-            <a href="https://moimon.web.fc2.com/moimon.html?p=story4">第４話</a>
-            <a href="https://moimon.web.fc2.com/moimon.html?p=story5">第５話</a>
-            <br>
-            <a href="https://moimon.web.fc2.com/moimon.html?p=story6">第６話</a>
-            <a href="https://moimon.web.fc2.com/moimon.html?p=story7">第７話</a>
-            <a href="https://moimon.web.fc2.com/moimon.html?p=story8">第８話</a>
-            <br>
-          <span style="color: #000000; font-size: 1.2rem; font-weight: 500;">2026年7月10日 第８話更新</span>
-        </div>
-<!-- 単行本紹介テキスト -->
-        <div class="info-text">
-            ↓単行本にしか収録されていない番外編や<br>
-            モイモン図鑑もあるのでよければ手に取ってみてください。
-        </div>
-        <!-- 単行本リスト（1〜3巻） -->
-        <div class="books-grid">
-            <!-- 1巻 -->
-            <a href="https://amzn.asia/d/07fAnDtq" class="book-item" target="_blank" rel="noopener noreferrer">
-                <div class="book-image-box placeholder">
-                    <img src="cover1.jpg" alt="単行本 第1巻 表紙画像" onload="this.parentElement.classList.remove('placeholder');" onerror="this.style.display='none';">
-                    <span>単行本<br>第１巻<br>表紙画像</span>
-                </div>
-                <div class="book-title">第１巻</div>
-            </a>
-            <!-- 2巻 -->
-            <a href="https://amzn.asia/d/089Nwt0u" class="book-item" target="_blank" rel="noopener noreferrer">
-                <div class="book-image-box placeholder">
-                    <img src="cover2.jpg" alt="単行本 第2巻 表紙画像" onload="this.parentElement.classList.remove('placeholder');" onerror="this.style.display='none';">
-                    <span>単行本<br>第２巻<br>表紙画像</span>
-                </div>
-                <div class="book-title">第２巻</div>
-            </a>
-            <!-- 3巻 -->
-            <a href="https://amzn.asia/d/09XwIM8v" class="book-item" target="_blank" rel="noopener noreferrer">
-                <div class="book-image-box placeholder">
-                    <img src="cover3.jpg" alt="単行本 第3巻 表紙画像" onload="this.parentElement.classList.remove('placeholder');" onerror="this.style.display='none';">
-                    <span>単行本<br>第３巻<br>表紙画像</span>
-                </div>
-                <div class="book-title">第３巻</div>
-            </a>
-        </div>
-        <!-- 単行本リスト（4巻：下の行） -->
-        <div class="books-container-lower">
-            <!-- 4巻 -->
-            <a href="https://amzn.asia/d/0gCEH4oe" class="book-item" target="_blank" rel="noopener noreferrer">
-                <div class="book-image-box placeholder">
-                    <img src="cover4.jpg" alt="単行本 第4巻 表紙画像" onload="this.parentElement.classList.remove('placeholder');" onerror="this.style.display='none';">
-                    <span>単行本<br>第４巻<br>表紙画像</span>
-                </div>
-                <div class="book-title">第４巻</div>
-            </a>
-        </div>
-        <!-- X (旧Twitter) アイコンリンク -->
-        <a href="https://x.com/keeeezk" class="x-link" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path>
-            </svg>
-        </a>
+
+    <div class="tap-zone tap-left" id="zone-left"></div>
+    <div class="tap-zone tap-center" id="zone-center"></div>
+    <div class="tap-zone tap-right" id="zone-right"></div>
+
+    <div class="menu-bar top-bar" id="top-bar">
+        <a href="index.html" class="back-to-top">◀ TOPへ戻る</a>
+        <div class="top-title" id="menu-title">第1話</div>
     </div>
+
+    <div class="comic-viewer-wrapper">
+        <div class="comic-viewer" id="viewer" dir="rtl"></div>
+    </div>
+
+    <div class="menu-bar bottom-bar" id="bottom-bar">
+        <div class="page-counter"><span id="current-page">1</span> / <span id="total-page">54</span></div>
+        
+        <div class="gauge-container">
+            <input type="range" id="page-gauge" class="page-gauge" dir="rtl" min="1" max="54" value="1" step="1">
+        </div>
+
+        <div class="story-nav">
+            <a href="#" id="link-next">◀ 次の話</a>
+            <a href="#" id="link-prev">前の話 ▶</a>
+        </div>
+    </div>
+
+    <script>
+        // ① URLから現在の話数を取得
+        const urlParams = new URLSearchParams(window.location.search);
+        const storyFolder = urlParams.get('p') || 'story1';
+
+        const storyNum = storyFolder.replace('story', '');
+        document.getElementById('menu-title').innerText = `第${storyNum}話`;
+
+        // ② 各話の総ページ数の設定
+        const pageCounts = {
+            'story1': 54, 
+            'story2': 22,  
+            'story3': 34,  
+            'story4': 44,  
+            'story5': 48,  
+            'story6': 50,  
+            'story7': 26,  
+            'story8': 30,  
+        };
+        const totalPages = pageCounts[storyFolder] || 54;
+
+        document.getElementById('total-page').innerText = totalPages;
+        const gauge = document.getElementById('page-gauge');
+        gauge.max = totalPages;
+
+        // ③ 前後の話のリンクURLを自動セット
+        const currentNum = parseInt(storyNum, 10);
+        const prevLink = document.getElementById('link-prev');
+        const nextLink = document.getElementById('link-next');
+
+        if (currentNum > 1) {
+            prevLink.href = `?p=story${currentNum - 1}`;
+        } else {
+            prevLink.classList.add('disabled');
+        }
+
+        if (pageCounts[`story${currentNum + 1}`]) {
+            nextLink.href = `?p=story${currentNum + 1}`;
+        } else {
+            nextLink.classList.add('disabled');
+        }
+
+// ④ 画像URL of GitHub Pages（エラー回避・高速化）
+        const githubBase = `https://kizukusan.github.io/moimon/${storyFolder}/`;
+        const viewer = document.getElementById('viewer');
+        for (let i = 1; i <= totalPages; i++) {
+            const pageNum = String(i).padStart(2, '0');
+            const img = document.createElement('img');
+            img.src = `${githubBase}${pageNum}.jpg`; // ← ?raw=true も不要になります
+            viewer.appendChild(img);
+        }
+
+        // ⑤ ビューワー（slick）の起動と連動設定
+        $(document).ready(function(){
+            const $viewer = $('#viewer');
+            let isDragging = false;
+            
+            $viewer.slick({
+                rtl: true,
+                infinite: false,
+                slidesToShow: 1,
+                slidesToScroll: 1,
+                arrows: false,
+                swipe: true,
+                touchMove: true
+            });
+
+            // ページがめくられたらスライダーとページ表示を同期
+            $viewer.on('afterChange', function(event, slick, currentSlide){
+                const actualPage = currentSlide + 1; 
+                document.getElementById('current-page').innerText = actualPage;
+                // スライダー操作中でない場合のみ、つまみの位置を同期
+                if (!isDragging) {
+                    gauge.value = actualPage;
+                }
+            });
+
+            // スライダー操作開始
+            $(gauge).on('mousedown touchstart', function() {
+                isDragging = true;
+            });
+
+            // スライダーを動かしている最中の処理（数値のリアルタイム表示更新のみ）
+            $(gauge).on('input', function(){
+                const targetPage = parseInt($(this).val(), 10);
+                document.getElementById('current-page').innerText = targetPage;
+            });
+
+            // スライダー操作終了（ドラッグを離した、またはクリックした瞬間にジャンプ）
+            $(gauge).on('change mouseup touchend', function(){
+                if (isDragging) {
+                    isDragging = false;
+                    const targetPage = parseInt($(this).val(), 10);
+                    document.getElementById('current-page').innerText = targetPage;
+                    $viewer.slick('slickGoTo', targetPage - 1, true); // アニメーションなしで即座に移動
+                }
+            });
+
+            // 画面タップ操作の割り当て（右端タップで進む、左端タップで戻る）
+            $('#zone-right').on('click', function(){
+                $viewer.slick('slickPrev'); 
+            });
+
+            $('#zone-left').on('click', function(){
+                $viewer.slick('slickNext'); 
+            });
+
+            // 中央タップ（メニューの出現・格納）
+            $('#zone-center').on('click', function(){
+                $('#top-bar').toggleClass('menu-active');
+                $('#bottom-bar').toggleClass('menu-active');
+            });
+
+            // 自動的にメニューを閉じる（スライダー操作中以外のみ実行）
+            $viewer.on('beforeChange', function(){
+                if (!isDragging) {
+                    $('#top-bar').removeClass('menu-active');
+                    $('#bottom-bar').removeClass('menu-active');
+                }
+            });
+        });
+    </script>
+
 </body>
 </html>
