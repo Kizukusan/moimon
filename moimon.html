@@ -29,7 +29,7 @@
         /* ビューワー全体のサイズ設定 */
         .comic-viewer-wrapper {
             width: 100%;
-            height: calc(100vh - var(--ad-safe-bottom));
+            height: calc(100dvh - var(--ad-safe-bottom));
             display: flex;
             align-items: center;
             justify-content: center;
@@ -43,7 +43,7 @@
         .comic-viewer img { 
             width: 100%; 
             height: auto; 
-            max-height: calc(100vh - var(--ad-safe-bottom));
+            max-height: calc(100dvh - var(--ad-safe-bottom));
             object-fit: contain;
             display: block; 
         }
@@ -53,22 +53,16 @@
             .comic-viewer {
                 max-width: none;
                 width: 100%;
-                height: calc(100vh - var(--ad-safe-bottom)); /* 横画面時は高さを厳格に固定 */
+                height: calc(100dvh - var(--ad-safe-bottom));
             }
         }
 
-        /* 
-          【画面が真っ暗になるバグを解消した超重要CSS】
-          Slickが自動生成する枠を display: contents; で「存在しないもの」として透過させ、
-          内部の左右の画像コンテナ（.slide-spread）を直接Flexboxで中央に引き寄せます。
-          これでSlickのレイアウトバグを完璧に回避しつつ、隙間0pxを実現します。
-        */
         .comic-viewer .slick-track {
             display: flex !important;
-            height: 100% !important; /* 横画面時の突き抜けを防ぐため高さを固定 */
+            height: 100% !important;
         }
         .comic-viewer .slick-slide {
-            height: 100% !important; /* スライド自体の高さを固定 */
+            height: 100% !important;
             display: flex !important;
             justify-content: center;
             align-items: center;
@@ -77,38 +71,32 @@
         /* 見開きスライド用コンテナ */
         .slide-spread {
             display: flex;
-            flex-direction: row; /* 左右を正順に並べる */
-            justify-content: center;     /* 二枚まとめて中央寄せ */
+            flex-direction: row;
+            justify-content: center;
             align-items: center;
             width: 100vw;
-            height: calc(100vh - var(--ad-safe-bottom));
+            height: calc(100dvh - var(--ad-safe-bottom));
             box-sizing: border-box;
         }
 
-        /*
-          【隙間0pxの核心的修正】
-          width: 50% を廃止し、コンテナが画像の実サイズに合わせて
-          自動的に縮む（シュリンクラップ）ようにする。
-          これにより両画像が常に中央でぴったり接する。
-        */
         .page-container {
             height: 100%;
-            max-height: calc(100vh - var(--ad-safe-bottom)); /* 縦幅の限界を設定 */
+            max-height: calc(100dvh - var(--ad-safe-bottom));
             display: flex;
             align-items: center;
             justify-content: center;
             background-color: #111;
-            font-size: 0;     /* インライン要素の隙間を除去 */
-            line-height: 0;   /* line-heightによる底部の隙間を除去 */
+            font-size: 0;
+            line-height: 0;
             box-sizing: border-box;
         }
         .page-container img {
-            display: block;   /* インライン隙間（descent分）を除去 */
+            display: block;
             width: auto;
-            height: 100%;     /* 縦幅を画面（マイナス下部余白）の100%に強制し下部の欠けを防ぐ */
-            max-width: 50vw;  /* 最大でも画面の半分まで */
-            max-height: calc(100vh - var(--ad-safe-bottom)); /* 高さは画面いっぱい */
-            object-fit: contain; /* アスペクト比を崩さず綺麗に収める */
+            height: auto;
+            max-width: 50vw;
+            max-height: calc(100dvh - var(--ad-safe-bottom));
+            object-fit: contain;
         }
 
         /* 左右・中央のタップ判定エリア */
@@ -143,7 +131,7 @@
         }
         .bottom-bar {
             bottom: var(--ad-safe-bottom);
-            height: 100px;
+            height: 110px; /* ボタン追加に伴い少しだけ高さを調整 */
             transform: translateY(calc(100% + var(--ad-safe-bottom)));
             display: flex;
             flex-direction: column;
@@ -190,11 +178,13 @@
             accent-color: #e50914; 
         }
 
+        /* 話ナビゲーション全体のレイアウト調整 */
         .story-nav {
             display: flex;
             justify-content: space-between;
             align-items: center;
             font-size: 14px;
+            width: 100%;
         }
         .story-nav a {
             color: #fff;
@@ -203,11 +193,26 @@
             padding: 5px 15px;
             border-radius: 4px;
             border: 1px solid #444;
+            white-space: nowrap;
         }
         .story-nav a.disabled {
             color: #555;
             border-color: #222;
             pointer-events: none;
+        }
+
+        /* 修正：全画面表示ボタンを下部中央に綺麗に収めるスタイル */
+        .fullscreen-btn {
+            color: #fff;
+            font-size: 13px;
+            background: #e50914; /* ブランドカラー等に合わせて変更してください */
+            padding: 5px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: none;
+            font-family: sans-serif;
+            white-space: nowrap;
+            margin: 0 10px;
         }
     </style>
 </head>
@@ -235,6 +240,8 @@
 
         <div class="story-nav">
             <a href="#" id="link-next">◀ 次の話</a>
+            <!-- 修正：全画面切り替えボタンを中央に配置 -->
+            <button class="fullscreen-btn" id="fullscreen-btn">全画面表示</button>
             <a href="#" id="link-prev">前の話 ▶</a>
         </div>
     </div>
@@ -408,7 +415,11 @@
 
             let targetSlide = pageToSlideIndex(currentPage, currentOrientation);
             $viewer.slick('slickGoTo', targetSlide, true);
-            updateUI();
+            
+            setTimeout(function() {
+                $viewer.slick('setPosition');
+                updateUI();
+            }, 50);
         }
 
         $(document).ready(function(){
@@ -424,6 +435,10 @@
                     if (newOrientation !== currentOrientation) {
                         currentOrientation = newOrientation;
                         handleOrientationChange();
+                    } else {
+                        if ($viewer.hasClass('slick-initialized')) {
+                            $viewer.slick('setPosition');
+                        }
                     }
                 }, 200);
             });
@@ -483,6 +498,60 @@
                 $('#top-bar').toggleClass('menu-active');
                 $('#bottom-bar').toggleClass('menu-active');
             });
+
+            // 全画面表示のコントロール処理
+            const fsBtn = document.getElementById('fullscreen-btn');
+
+            fsBtn.addEventListener('click', function(e) {
+                e.stopPropagation(); // メニューが閉じてしまうのを防ぐ
+                
+                if (!document.fullscreenElement && 
+                    !document.webkitFullscreenElement && 
+                    !document.mozFullScreenElement && 
+                    !document.msFullscreenElement) {
+                    // 全画面開始処理
+                    const docElm = document.documentElement;
+                    if (docElm.requestFullscreen) {
+                        docElm.requestFullscreen();
+                    } else if (docElm.webkitRequestFullscreen) {
+                        docElm.webkitRequestFullscreen();
+                    } else if (docElm.mozRequestFullScreen) {
+                        docElm.mozRequestFullScreen();
+                    } else if (docElm.msRequestFullscreen) {
+                        docElm.msRequestFullscreen();
+                    }
+                } else {
+                    // 全画面解除処理（通常表示に戻る）
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    } else if (document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                    } else if (document.mozCancelFullScreen) {
+                        document.mozCancelFullScreen();
+                    } else if (document.msExitFullscreen) {
+                        document.msExitFullscreen();
+                    }
+                }
+            });
+
+            // 全画面の状態変化を検知してボタンの文字を切り替え
+            function onFullscreenChange() {
+                if (document.fullscreenElement || document.webkitFullscreenElement) {
+                    fsBtn.innerText = "通常表示に戻る";
+                } else {
+                    fsBtn.innerText = "全画面表示";
+                }
+                setTimeout(function() {
+                    if ($viewer.hasClass('slick-initialized')) {
+                        $viewer.slick('setPosition');
+                    }
+                }, 150);
+            }
+
+            document.addEventListener('fullscreenchange', onFullscreenChange);
+            document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+            document.addEventListener('mozfullscreenchange', onFullscreenChange);
+            document.addEventListener('MSFullscreenChange', onFullscreenChange);
         });
     </script>
 
