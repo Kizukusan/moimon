@@ -53,6 +53,7 @@
             .comic-viewer {
                 max-width: none;
                 width: 100%;
+                height: calc(100vh - var(--ad-safe-bottom)); /* 横画面時は高さを厳格に固定 */
             }
         }
 
@@ -64,9 +65,10 @@
         */
         .comic-viewer .slick-track {
             display: flex !important;
+            height: 100% !important; /* 横画面時の突き抜けを防ぐため高さを固定 */
         }
         .comic-viewer .slick-slide {
-            height: auto !important;
+            height: 100% !important; /* スライド自体の高さを固定 */
             display: flex !important;
             justify-content: center;
             align-items: center;
@@ -80,6 +82,7 @@
             align-items: center;
             width: 100vw;
             height: calc(100vh - var(--ad-safe-bottom));
+            box-sizing: border-box;
         }
 
         /*
@@ -90,24 +93,23 @@
         */
         .page-container {
             height: 100%;
+            max-height: calc(100vh - var(--ad-safe-bottom)); /* 縦幅の限界を設定 */
             display: flex;
             align-items: center;
             justify-content: center;
             background-color: #111;
             font-size: 0;     /* インライン要素の隙間を除去 */
             line-height: 0;   /* line-heightによる底部の隙間を除去 */
+            box-sizing: border-box;
         }
         .page-container img {
-    display: block;   /* インライン隙間（descent分）を除去 */
-    width: auto;
-    height: auto;
-    /* 縦幅を画面（マイナス下部余白）の100%に固定 */
-    height: calc(100vh - var(--ad-safe-bottom)); 
-    /* 縦に合わせた結果、横幅が画面の半分を超えないようにガード */
-    max-width: 50vw;  
-    /* アスペクト比を崩さず綺麗に収める */
-    object-fit: contain; 
-}
+            display: block;   /* インライン隙間（descent分）を除去 */
+            width: auto;
+            height: 100%;     /* 縦幅を画面（マイナス下部余白）の100%に強制し下部の欠けを防ぐ */
+            max-width: 50vw;  /* 最大でも画面の半分まで */
+            max-height: calc(100vh - var(--ad-safe-bottom)); /* 高さは画面いっぱい */
+            object-fit: contain; /* アスペクト比を崩さず綺麗に収める */
+        }
 
         /* 左右・中央のタップ判定エリア */
         .tap-zone {
