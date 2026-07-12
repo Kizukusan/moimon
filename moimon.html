@@ -98,12 +98,16 @@
             line-height: 0;   /* line-heightによる底部の隙間を除去 */
         }
         .page-container img {
-            display: block;   /* インライン隙間（descent分）を除去 */
-            width: auto;
-            height: auto;
-            max-width: 50vw;  /* 最大でも画面の半分まで */
-            max-height: calc(100vh - var(--ad-safe-bottom)); /* 高さは画面いっぱい */
-        }
+    display: block;   /* インライン隙間（descent分）を除去 */
+    width: auto;
+    height: auto;
+    /* 縦幅を画面（マイナス下部余白）の100%に固定 */
+    height: calc(100vh - var(--ad-safe-bottom)); 
+    /* 縦に合わせた結果、横幅が画面の半分を超えないようにガード */
+    max-width: 50vw;  
+    /* アスペクト比を崩さず綺麗に収める */
+    object-fit: contain; 
+}
 
         /* 左右・中央のタップ判定エリア */
         .tap-zone {
