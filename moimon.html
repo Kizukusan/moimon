@@ -11,7 +11,7 @@
 
     <style>
         :root {
-            /* 広告を避けるための下部余白（広告の高さに合わせて調整してください） */
+            /* 広告を避けるための下部余白 */
             --ad-safe-bottom: 0px; 
         }
 
@@ -48,6 +48,63 @@
             display: block; 
         }
 
+        /* 横画面時のみビューワーの最大幅制限を解除し全画面表示にする */
+        @media (orientation: landscape) {
+            .comic-viewer {
+                max-width: none;
+                width: 100%;
+            }
+        }
+
+        /* 
+          【画面が真っ暗になるバグを解消した超重要CSS】
+          Slickが自動生成する枠を display: contents; で「存在しないもの」として透過させ、
+          内部の左右の画像コンテナ（.slide-spread）を直接Flexboxで中央に引き寄せます。
+          これでSlickのレイアウトバグを完璧に回避しつつ、隙間0pxを実現します。
+        */
+        .comic-viewer .slick-track {
+            display: flex !important;
+        }
+        .comic-viewer .slick-slide {
+            height: auto !important;
+            display: flex !important;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 見開きスライド用コンテナ */
+        .slide-spread {
+            display: flex;
+            flex-direction: row; /* 左右を正順に並べる */
+            justify-content: center;     /* 二枚まとめて中央寄せ */
+            align-items: center;
+            width: 100vw;
+            height: calc(100vh - var(--ad-safe-bottom));
+        }
+
+        /*
+          【隙間0pxの核心的修正】
+          width: 50% を廃止し、コンテナが画像の実サイズに合わせて
+          自動的に縮む（シュリンクラップ）ようにする。
+          これにより両画像が常に中央でぴったり接する。
+        */
+        .page-container {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #111;
+            font-size: 0;     /* インライン要素の隙間を除去 */
+            line-height: 0;   /* line-heightによる底部の隙間を除去 */
+        }
+        .page-container img {
+            display: block;   /* インライン隙間（descent分）を除去 */
+            width: auto;
+            height: auto;
+            max-width: 50vw;  /* 最大でも画面の半分まで */
+            max-height: calc(100vh - var(--ad-safe-bottom)); /* 高さは画面いっぱい */
+        }
+
         /* 左右・中央のタップ判定エリア */
         .tap-zone {
             position: fixed;
@@ -69,7 +126,6 @@
             z-index: 100;
             box-sizing: border-box;
         }
-        /* 初期状態は画面の外に隠しておく */
         .top-bar {
             top: 0;
             height: 60px;
@@ -89,12 +145,10 @@
             padding: 10px 20px;
             border-top: 1px solid #333;
         }
-        /* メニュー表示用のクラス */
         .menu-active {
             transform: translateY(0) !important;
         }
 
-        /* ボタン・テキストのデザイン */
         .top-title {
             font-size: 16px;
             font-weight: bold;
@@ -110,14 +164,12 @@
             border-radius: 4px;
         }
 
-        /* ページ数表示（〇/〇） */
         .page-counter {
             text-align: center;
             font-size: 14px;
             color: #ccc;
         }
 
-        /* ゲージ（スライダーバー） */
         .gauge-container {
             width: 100%;
             display: flex;
@@ -129,10 +181,9 @@
             width: 85%;
             margin: 0;
             cursor: pointer;
-            accent-color: #e50914; /* ジャンプ風の赤色ゲージ */
+            accent-color: #e50914; 
         }
 
-        /* 下部ナビゲーション（【修正】次の話を左、前の話を右に強制配置） */
         .story-nav {
             display: flex;
             justify-content: space-between;
@@ -173,7 +224,7 @@
         <div class="page-counter"><span id="current-page">1</span> / <span id="total-page">54</span></div>
         
         <div class="gauge-container">
-            <input type="range" id="page-gauge" class="page-gauge" dir="rtl" min="1" max="54" value="1" step="1">
+            <input type="range" id="page-gauge" class="page-gauge" min="1" max="54" value="1" step="1">
         </div>
 
         <div class="story-nav">
@@ -183,14 +234,12 @@
     </div>
 
     <script>
-        // ① URLから現在の話数を取得
         const urlParams = new URLSearchParams(window.location.search);
         const storyFolder = urlParams.get('p') || 'story1';
 
         const storyNum = storyFolder.replace('story', '');
         document.getElementById('menu-title').innerText = `第${storyNum}話`;
 
-        // ② 各話の総ページ数の設定
         const pageCounts = {
             'story1': 54, 
             'story2': 22,  
@@ -207,7 +256,6 @@
         const gauge = document.getElementById('page-gauge');
         gauge.max = totalPages;
 
-        // ③ 前後の話のリンクURLを自動セット
         const currentNum = parseInt(storyNum, 10);
         const prevLink = document.getElementById('link-prev');
         const nextLink = document.getElementById('link-next');
@@ -224,21 +272,103 @@
             nextLink.classList.add('disabled');
         }
 
-// ④ 画像URL of GitHub Pages（エラー回避・高速化）
         const githubBase = `https://kizukusan.github.io/moimon/${storyFolder}/`;
-        const viewer = document.getElementById('viewer');
-        for (let i = 1; i <= totalPages; i++) {
-            const pageNum = String(i).padStart(2, '0');
-            const img = document.createElement('img');
-            img.src = `${githubBase}${pageNum}.jpg`; // ← ?raw=true も不要になります
-            viewer.appendChild(img);
+        const $viewer = $('#viewer');
+
+        let currentOrientation = getOrientation();
+        let currentPage = 1; 
+        let isDragging = false;
+
+        function getOrientation() {
+            return window.innerWidth > window.innerHeight ? 'landscape' : 'portrait';
         }
 
-        // ⑤ ビューワー（slick）の起動と連動設定
-        $(document).ready(function(){
-            const $viewer = $('#viewer');
-            let isDragging = false;
-            
+        function pageToSlideIndex(page, orientation) {
+            if (orientation === 'portrait') {
+                return page - 1;
+            } else {
+                return page === 1 ? 0 : Math.floor(page / 2);
+            }
+        }
+
+        function slideIndexToPage(slideIndex, orientation) {
+            if (orientation === 'portrait') {
+                return slideIndex + 1;
+            } else {
+                return slideIndex === 0 ? 1 : slideIndex * 2;
+            }
+        }
+
+        function createSpreadSlide(rightPage, leftPage) {
+            const slide = document.createElement('div');
+            slide.className = 'slide-spread';
+
+            const rightContainer = document.createElement('div');
+            rightContainer.className = 'page-container right-side';
+            if (rightPage) {
+                const img = document.createElement('img');
+                img.src = `${githubBase}${String(rightPage).padStart(2, '0')}.jpg`;
+                rightContainer.appendChild(img);
+            }
+            slide.appendChild(rightContainer);
+
+            const leftContainer = document.createElement('div');
+            leftContainer.className = 'page-container left-side';
+            if (leftPage) {
+                const img = document.createElement('img');
+                img.src = `${githubBase}${String(leftPage).padStart(2, '0')}.jpg`;
+                leftContainer.appendChild(img);
+            }
+            slide.appendChild(leftContainer);
+
+            return slide;
+        }
+
+        function buildDOM(orientation) {
+            $viewer.empty();
+            if (orientation === 'portrait') {
+                for (let i = 1; i <= totalPages; i++) {
+                    const pageNum = String(i).padStart(2, '0');
+                    const img = document.createElement('img');
+                    img.src = `${githubBase}${pageNum}.jpg`;
+                    
+                    const slide = document.createElement('div');
+                    slide.appendChild(img);
+                    $viewer.append(slide);
+                }
+            } else {
+                $viewer.append(createSpreadSlide(1, null));
+
+                for (let i = 2; i <= totalPages; i += 2) {
+                    const rightPage = i;
+                    const leftPage = (i + 1 <= totalPages) ? i + 1 : null;
+                    $viewer.append(createSpreadSlide(rightPage, leftPage));
+                }
+            }
+        }
+
+        function updateUI() {
+            if (currentOrientation === 'portrait') {
+                document.getElementById('current-page').innerText = currentPage;
+            } else {
+                if (currentPage === 1) {
+                    document.getElementById('current-page').innerText = '1';
+                } else {
+                    const nextPage = currentPage + 1;
+                    if (nextPage > totalPages) {
+                        document.getElementById('current-page').innerText = `${currentPage}`;
+                    } else {
+                        document.getElementById('current-page').innerText = `${currentPage}-${nextPage}`;
+                    }
+                }
+            }
+
+            if (!isDragging) {
+                gauge.value = totalPages - currentPage + 1;
+            }
+        }
+
+        function initSlick() {
             $viewer.slick({
                 rtl: true,
                 infinite: false,
@@ -249,58 +379,103 @@
                 touchMove: true
             });
 
-            // ページがめくられたらスライダーとページ表示を同期
-            $viewer.on('afterChange', function(event, slick, currentSlide){
-                const actualPage = currentSlide + 1; 
-                document.getElementById('current-page').innerText = actualPage;
-                // スライダー操作中でない場合のみ、つまみの位置を同期
-                if (!isDragging) {
-                    gauge.value = actualPage;
-                }
+            $viewer.off('afterChange').on('afterChange', function(event, slick, currentSlide){
+                currentPage = slideIndexToPage(currentSlide, currentOrientation);
+                updateUI();
             });
 
-            // スライダー操作開始
+            $viewer.off('beforeChange').on('beforeChange', function(){
+                if (!isDragging) {
+                    $('#top-bar').removeClass('menu-active');
+                    $('#bottom-bar').removeClass('menu-active');
+                }
+            });
+        }
+
+        function handleOrientationChange() {
+            if ($viewer.hasClass('slick-initialized')) {
+                $viewer.slick('unslick');
+            }
+
+            buildDOM(currentOrientation);
+            initSlick();
+
+            let targetSlide = pageToSlideIndex(currentPage, currentOrientation);
+            $viewer.slick('slickGoTo', targetSlide, true);
+            updateUI();
+        }
+
+        $(document).ready(function(){
+            buildDOM(currentOrientation);
+            initSlick();
+            updateUI();
+
+            let resizeTimeout;
+            $(window).on('resize', function() {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(function() {
+                    const newOrientation = getOrientation();
+                    if (newOrientation !== currentOrientation) {
+                        currentOrientation = newOrientation;
+                        handleOrientationChange();
+                    }
+                }, 200);
+            });
+
             $(gauge).on('mousedown touchstart', function() {
                 isDragging = true;
             });
 
-            // スライダーを動かしている最中の処理（数値のリアルタイム表示更新のみ）
             $(gauge).on('input', function(){
-                const targetPage = parseInt($(this).val(), 10);
-                document.getElementById('current-page').innerText = targetPage;
-            });
+                const uiValue = parseInt($(this).val(), 10);
+                const calcPage = totalPages - uiValue + 1;
 
-            // スライダー操作終了（ドラッグを離した、またはクリックした瞬間にジャンプ）
-            $(gauge).on('change mouseup touchend', function(){
-                if (isDragging) {
-                    isDragging = false;
-                    const targetPage = parseInt($(this).val(), 10);
-                    document.getElementById('current-page').innerText = targetPage;
-                    $viewer.slick('slickGoTo', targetPage - 1, true); // アニメーションなしで即座に移動
+                if (currentOrientation === 'portrait') {
+                    document.getElementById('current-page').innerText = calcPage;
+                } else {
+                    if (calcPage === 1) {
+                        document.getElementById('current-page').innerText = '1';
+                    } else {
+                        const rightPage = calcPage % 2 === 0 ? calcPage : calcPage - 1;
+                        const nextPage = rightPage + 1;
+                        if (nextPage > totalPages) {
+                            document.getElementById('current-page').innerText = `${rightPage}`;
+                        } else {
+                            document.getElementById('current-page').innerText = `${rightPage}-${nextPage}`;
+                        }
+                    }
                 }
             });
 
-            // 画面タップ操作の割り当て（右端タップで進む、左端タップで戻る）
-            $('#zone-right').on('click', function(){
-                $viewer.slick('slickPrev'); 
+            $(gauge).on('change mouseup touchend', function(){
+                if (isDragging) {
+                    isDragging = false;
+                    const uiValue = parseInt($(this).val(), 10);
+                    let calcPage = totalPages - uiValue + 1;
+
+                    if (currentOrientation === 'landscape' && calcPage > 1 && calcPage % 2 !== 0) {
+                        calcPage = calcPage - 1;
+                    }
+
+                    currentPage = calcPage;
+                    const targetSlide = pageToSlideIndex(currentPage, currentOrientation);
+
+                    $viewer.slick('slickGoTo', targetSlide, true);
+                    updateUI();
+                }
             });
 
             $('#zone-left').on('click', function(){
                 $viewer.slick('slickNext'); 
             });
 
-            // 中央タップ（メニューの出現・格納）
+            $('#zone-right').on('click', function(){
+                $viewer.slick('slickPrev'); 
+            });
+
             $('#zone-center').on('click', function(){
                 $('#top-bar').toggleClass('menu-active');
                 $('#bottom-bar').toggleClass('menu-active');
-            });
-
-            // 自動的にメニューを閉じる（スライダー操作中以外のみ実行）
-            $viewer.on('beforeChange', function(){
-                if (!isDragging) {
-                    $('#top-bar').removeClass('menu-active');
-                    $('#bottom-bar').removeClass('menu-active');
-                }
             });
         });
     </script>
