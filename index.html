@@ -64,6 +64,18 @@
         .main-image-box:not(.placeholder) span {
             display: none;
         }
+
+        /* 赤い四角形部分に重ねるレスポンシブ透明リンク */
+        .red-square-link {
+            position: absolute;
+            top: 44.92%;    /* 上からの位置（%） */
+            left: 25.87%;   /* 左からの位置（%） */
+            width: 10.96%;  /* リンク範囲の幅（%） */
+            height: 9.5%;   /* リンク範囲の高さ（%） */
+            display: block;
+            z-index: 10;
+        }
+
         /* 話数リスト */
         .story-list {
             width: 100%;
@@ -222,36 +234,35 @@
         <h1>もいもん</h1>
         <!-- メイン画像 (画像がない場合は黒背景のプレースホルダーが表示されます) -->
         <div class="main-image-box placeholder">
-            <img src="main2.png" alt="メイン画像" usemap="#moimon_map" onload="this.parentElement.classList.remove('placeholder');" onerror="this.style.display='none';">
+            <img src="main2.png" alt="メイン画像" onload="this.parentElement.classList.remove('placeholder');" onerror="this.style.display='none';">
             <span>メイン画像</span>
+
+            <!-- 赤い正方形部分だけに配置したリンク（hrefに対象URLを指定してください） -->
+            <a href="https://daysneo.com/works/93d03b0023f4f398bea59c299de03a1e.html" class="red-square-link" aria-label="原作"></a>
         </div>
 
-        <map name="moimon_map">
-            <area shape="rect" coords="269,539,383,653" href="https://daysneo.com/works/93d03b0023f4f398bea59c299de03a1e.html" alt="赤い正方形のリンク">
-        </map>
-
         <!-- 話数リスト -->
-<div class="story-list">
-    <!-- 自分のサイト内の moimon.html にパラメータを渡してジャンプさせる -->
-    <a href="moimon.html?p=story1">第１話</a>
-    <a href="moimon.html?p=story2">第２話</a>
-    <a href="moimon.html?p=story3">第３話</a>
-    <br>
-    <a href="moimon.html?p=story4">第４話</a>
-    <a href="moimon.html?p=story5">第５話</a>
-    <a href="moimon.html?p=story6">第６話</a>
-    <br>
-    <a href="moimon.html?p=story7">第７話</a>
-    <a href="moimon.html?p=story8">第８話</a>
-    <a href="moimon.html?p=story9">第９話</a>
-    <br>
-    <a href="moimon.html?p=story10">第１０話</a>
-    <a href="moimon.html?p=story11">第１１話</a>
-    <a href="moimon.html?p=story12">第１２話</a>
-    <br>
-    <span style="color: #000000; font-size: 1.2rem; font-weight: 500;">2026年7月24日 第11話＆12話更新</span>
-</div>
-<!-- 単行本紹介テキスト -->
+        <div class="story-list">
+            <!-- 自分のサイト内の moimon.html にパラメータを渡してジャンプさせる -->
+            <a href="moimon.html?p=story1">第１話</a>
+            <a href="moimon.html?p=story2">第２話</a>
+            <a href="moimon.html?p=story3">第３話</a>
+            <br>
+            <a href="moimon.html?p=story4">第４話</a>
+            <a href="moimon.html?p=story5">第５話</a>
+            <a href="moimon.html?p=story6">第６話</a>
+            <br>
+            <a href="moimon.html?p=story7">第７話</a>
+            <a href="moimon.html?p=story8">第８話</a>
+            <a href="moimon.html?p=story9">第９話</a>
+            <br>
+            <a href="moimon.html?p=story10">第１０話</a>
+            <a href="moimon.html?p=story11">第１１話</a>
+            <a href="moimon.html?p=story12">第１２話</a>
+            <br>
+            <span style="color: #000000; font-size: 1.2rem; font-weight: 500;">2026年7月24日 第11話＆12話更新</span>
+        </div>
+        <!-- 単行本紹介テキスト -->
         <div class="info-text">
             ↓単行本にしか収録されていない番外編や<br>
             モイモン図鑑もあるのでよければ手に取ってみてください。
