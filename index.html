@@ -222,9 +222,14 @@
         <h1>もいもん</h1>
         <!-- メイン画像 (画像がない場合は黒背景のプレースホルダーが表示されます) -->
         <div class="main-image-box placeholder">
-            <img src="main2.png" alt="メイン画像" onload="this.parentElement.classList.remove('placeholder');" onerror="this.style.display='none';">
+            <img src="main2.png" alt="メイン画像" usemap="#moimon_map" onload="this.parentElement.classList.remove('placeholder');" onerror="this.style.display='none';">
             <span>メイン画像</span>
         </div>
+
+        <map name="moimon_map">
+            <area shape="rect" coords="269,539,383,653" href="https://daysneo.com/works/93d03b0023f4f398bea59c299de03a1e.html" alt="赤い正方形のリンク">
+        </map>
+
         <!-- 話数リスト -->
 <div class="story-list">
     <!-- 自分のサイト内の moimon.html にパラメータを渡してジャンプさせる -->
